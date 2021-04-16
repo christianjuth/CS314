@@ -8,3 +8,8 @@ sublistL([A], [A]) :- !.
 sublistL(L1, L2) :- ([Car1|Cdr1] = L1, sublistL(Cdr1, L2)); (excludeLastItem(L1, L3), sublistL(L3, L2)); listMatch(L1, L2).
 %sublistL(L1, L2) :- (excludeLastItem(L1, L3), sublistL(L3, L2)); listMatch(L1, L2).
 
+sublistL([], []).
+sublistL([_|Cdr], L2) :- subset(Cdr, L2).
+sublistL([Car|Cdr1], [Car|Cdr2]) :- subset(Cdr1, Cdr2).
+
+test(a).

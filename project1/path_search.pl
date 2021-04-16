@@ -183,8 +183,9 @@ lengthL([Car | Cdr], Length) :- lengthL(Cdr, I), Length is I + 1.
 % X = [b, c];
 % X = [a, b, c].
 
-sublistL(L1, L2) :- false. /* <-- YOUR CODE HERE (delete the false) */
-
+sublistL([], []).
+sublistL([_|Cdr], L2) :- subset(Cdr, L2).
+sublistL([Car|Cdr1], [Car|Cdr2]) :- subset(Cdr1, Cdr2).
 
 %Nth rule:
 % nth1L(N, L, X) should be true if X is the N-th element in L.
@@ -250,7 +251,7 @@ repeatL(L1, N, [Car | Cdr]) :- L1 = Car, I is N - 1, repeatL(L1, I, Cdr).
 % node(ta).
 % false.
 
-node(X) :- false. /* <-- YOUR CODE HERE (delete the false) */
+node(X) :- station(X).
 
 
 %Edge rule:
@@ -262,8 +263,9 @@ node(X) :- false. /* <-- YOUR CODE HERE (delete the false) */
 % edge(mon, s7, s1, _).
 % false.
 
-edge(D, X, Y, C) :- false.  /* <-- YOUR CODE HERE (delete the false) */
-
+edge_allPaths([S1|[T|[S2|_]]], S1, T, S2).
+edge_allPaths([_|[_|Rest]], S1, T, S2) :- edge_allPaths(Rest, S1, T, S2).
+edge(D, X, Y, C) :- route(RouteName, Route), service(Train, RouteName), train(Train, Days), memberL(D, Days), edge_allPaths(Route, X, C, Y).
 
 % =============== Helper rule library (required) ================== %
 
@@ -279,7 +281,7 @@ edge(D, X, Y, C) :- false.  /* <-- YOUR CODE HERE (delete the false) */
 % neighbors(wed, s1, X).
 % X = [s2]. % Only train tf services route rd which includes edge(_, s1, s7, _). train tf does not run on wednesday.
 
-neighbors(Day, Node, Neighbors) :- findall(N, edge(Day, Node, N, _), Neighbors). //do not modify ... already defined!
+neighbors(Day, Node, Neighbors) :- findall(N, edge(Day, Node, N, _), Neighbors). % //do not modify ... already defined!
 
 
 %Generate cost list rule: 
@@ -295,7 +297,8 @@ neighbors(Day, Node, Neighbors) :- findall(N, edge(Day, Node, N, _), Neighbors).
 % generate_cost_list(sun, s1, 0, [s2, s7], X).
 % X = [2, 4].
 
-generate_cost_list(CurNode, CurCost, NewNodes, NewNodeCostsList) :- false. /* <-- YOUR CODE HERE (delete the false) */
+generate_cost_list(CurNode, CurCost, [Neighbor], [Cost]) :- edge(_, CurNode, Neighbor, C), Cost is C + CurCost. 
+generate_cost_list(CurNode, CurCost, [Neighbor|RestNeighbors], [Cost|RestCost]) :- generate_cost_list(CurNode, CurCost, RestNeighbors, RestCost), edge(_, CurNode, Neighbor, C), Cost is C + CurCost, !. 
 
 
 %Generate path list rule:
@@ -315,7 +318,8 @@ generate_cost_list(CurNode, CurCost, NewNodes, NewNodeCostsList) :- false. /* <-
 % generate_path_list([s1, s2], [s3, s5, s8], X).
 % X = [[s1, s2, s3], [s1, s2, s5], [s1, s2, s8]].
 
-generate_path_list(CurPath, NewNodes, NewNodesPathsList) :- false. /* <-- YOUR CODE HERE (delete the false) */
+generate_path_list(CurPath, [Neighbor], [Path]) :- append(CurPath, [Neighbor], Path). 
+generate_path_list(CurPath, [Neighbor|RestNeighbors], [Path|RestPaths]) :- append(CurPath, [Neighbor], Path), generate_path_list(CurPath, RestNeighbors, RestPaths). 
 
 
 %Generate search node list rule
