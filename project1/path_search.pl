@@ -334,7 +334,8 @@ generate_path_list(CurPath, [Neighbor|RestNeighbors], [Path|RestPaths]) :- appen
 % generate_search_node_list([s8, s6], [6, 4], [[s1, s2], [s2, s6]], X).
 % X = [search_node(s8, 6, [s1, s2]), search_node(s6, 4, [s2, s6])].
 
-generate_search_node_list(Nodes, Costs, Paths, SearchNodeLists) :- false. /* <-- YOUR CODE HERE (delete the false) */
+generate_search_node_list([Node], [Cost], [Path], [SearchNode]) :- SearchNode = search_node(Node, Cost, Path).
+generate_search_node_list([Node|RestNodes], [Cost|RestCost], [Path|RestPaths], [SearchNode|RestSearchNodes]) :- SearchNode = search_node(Node, Cost, Path), generate_search_node_list(RestNodes, RestCost, RestPaths, RestSearchNodes).
 
 
 %Get min from pq rule:
@@ -350,8 +351,10 @@ generate_search_node_list(Nodes, Costs, Paths, SearchNodeLists) :- false. /* <--
 % get_min_from_pq([search_node(s6, 8, [s9, s2, s6]), search_node(s1, 2, [s9, s2, s1]), search_node(s8, 3, [s9, s2, s8])], X).
 % X = search_node(s1, 2, [s9, s2, s1]).
 
-get_min_from_pq(PQ, MinCostSearchNode) :- false. /* <-- YOUR CODE HERE (delete the false) */
-
+%get_min_from_pq(PQ, MinCostSearchNode) :- false. /* <-- YOUR CODE HERE (delete the false) */
+get_min_from_pq([PQItem], MinCostSearchNode) :- MinCostSearchNode = PQItem, !.
+get_min_from_pq([PQ1,PQ2], MinCostSearchNode) :- search_node(_,C1,_) = PQ1, search_node(_,C2,_) = PQ2, ((C1 < C2, MinCostSearchNode = PQ1); MinCostSearchNode = PQ2), !.
+get_min_from_pq([PQ1|[PQ2|PQ]], MinCostSearchNode) :- search_node(_,C1,_) = PQ1, search_node(_,C2,_) = PQ2, ((C1 < C2, append(PQ, [PQ1], Q)); append(PQ, [PQ1], Q)), get_min_from_pq(Q, MinCostSearchNode), !.
 
 %Update pq rule:
 % update_pq(+SearchNodesList, +PQ, -NewPQ).
@@ -365,7 +368,10 @@ get_min_from_pq(PQ, MinCostSearchNode) :- false. /* <-- YOUR CODE HERE (delete t
 % X = [search_node(s1, 0, [s1]), search_node(s3, 1, [s3])].
 % Only search_node(s3, _, _) is updated to the new cost and path since the orignal cost 4 is larger than 0.
 
-update_pq(SearchNodesList, PQ, NewPQ) :- false. /* <-- YOUR CODE HERE (delete the false) */
+%update_pq(SearchNodesList, PQ, NewPQ) :- false. /* <-- YOUR CODE HERE (delete the false) */
+update_pq([SearchNode], [PQ1], NewPQ) :- search_node(_,C1,_) = SearchNode, search_node(_,C2,_) = PQ1, ((C1 < C2, NewPQ = [SearchNode]); NewPQ = [PQ1]), !.
+update_pq([SearchNode|SearchNodeRest], [PQ1|PQ], NewPQ) :- update_pq(SearchNodeRest, PQ, PQNext), search_node(_,C1,_) = SearchNode, search_node(_,C2,_) = PQ1, ((C1 < C2, append([SearchNode], PQNext, NewPQ)); append([PQ1], PQNext, NewPQ)), !.
+%update_pq([SearchNode|SearchNodeRest], [PQ1|PQ], NewPQ) :- update_pq(SearchNodeRest, PQ, NewPQ).
 
 
 
