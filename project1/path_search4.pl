@@ -147,7 +147,7 @@ service(tf, rd).
 % memberL(e, [a, b, c]).
 % false.
 
-memberL(A, [A]) :- !.
+memberL(A, [A]).
 memberL(A, [Car | Cdr]) :- A = Car; memberL(A, Cdr).	
 
 %Reverse rule:
@@ -157,7 +157,7 @@ memberL(A, [Car | Cdr]) :- A = Car; memberL(A, Cdr).
 % reverseL([a, b, c], X).
 % X = [c, b, a].
 
-reverseL([Item], [Item]) :- !. 
+reverseL([Item], [Item]). 
 reverseL([L1Item|L1], L2) :- reverseL(L1, Rest), append(Rest, [L1Item], L2).
 
 
@@ -203,9 +203,22 @@ sublistL(L1, L2) :- false. /* <-- YOUR CODE HERE (delete the false) */
 % excludeL([a, b, d, f], [a, c], X).
 % X = [b, d, f].
 
-excludeL([], _, []) :- !.
-excludeL([Car|Cdr], X, Y) :- memberL(Car, X), !, excludeL(Cdr, X, Y).
-excludeL([Car|Cdr], X, [Car|Y]) :- excludeL(Cdr, X, Y).
+excludeL_includes(_, []).
+excludeL_includes([Car1|Cdr1], L2) :- ([Car2|Cdr2] = L2, Car1 = Car2, excludeL_includes(Cdr1, Cdr2)); excludeL_includes(Cdr1, L2).
+excludeL_excludesOne([], X).
+excludeL_excludesOne([Car|Cdr], X) :- \+(Car = X), excludeL_excludesOne(Cdr, X).
+excludeL_excludesList(_, []).
+excludeL_excludesList(L1, [Car|Cdr]) :- excludeL_excludesOne(L1, Car), excludeL_excludesList(L1, Cdr).
+
+%excludeL(L1, L2, L3) :- excludeL_includes(L1, L3), excludeL_excludesList(L2, L3). 
+lists:subtract([], _, []) :- !.
+lists:subtract([A|C], B, D) :-
+    memberchk(A, B), !,
+    subtract(C, B, D).
+lists:subtract([A|B], C, [A|D]) :-
+    subtract(B, C, D).
+
+excludeL(A, B, C) :- subtract(A, B, C).
 
 %Delete rule
 % deleteL(X, L1, L2) should be true if L2 is the same as L1 except that X is not in L1.
@@ -265,13 +278,10 @@ last([_|Cdr], Item) :- last(Cdr,Item).
 edge_allPaths([S1|[T|[S2|_]]], S1, T, S2).
 edge_allPaths([_|[_|Rest]], S1, T, S2) :- edge_allPaths(Rest, S1, T, S2).
 
-edge(D, X, Y, C) :- route(RouteName, Route), service(Train, RouteName), train(Train, Days), memberL(D, Days),
-    last(Route, LastStop),
-    [FirstStop|_] = Route,
-    ( 
-        (is_looped_on_day(RouteName, D), ( (X = LastStop, Y = FirstStop, C = 1); (X = FirstStop, Y = LastStop, C = 1)));  
-        (edge_allPaths(Route, X, C, Y); (\+is_oneway_route(RouteName, D), reverseL(Route, RevRoute), edge_allPaths(RevRoute, X, C, Y)))
-    ).
+%allPaths(D, S1, T, S2) :- (is_looped_on_day(RouteName))
+
+%edge(D, X, Y, C) :- route(RouteName, Route), service(Train, RouteName), train(Train, Days), memberL(D, Days), edge_allPaths(Route, X, C, Y).
+edge(D, X, Y, C) :- route(RouteName, Route), service(Train, RouteName), train(Train, Days), memberL(D, Days), (edge_allPaths(Route, X, C, Y); (\+is_oneway_route(RouteName, D), reverseL(Route, RevRoute), edge_allPaths(RevRoute, X, C, Y))).
 
 % =============== Helper rule library (required) ================== %
 
@@ -360,7 +370,7 @@ generate_search_node_list([Node|RestNodes], [Cost|RestCost], [Path|RestPaths], [
 %get_min_from_pq(PQ, MinCostSearchNode) :- false. /* <-- YOUR CODE HERE (delete the false) */
 get_min_from_pq([PQItem], MinCostSearchNode) :- MinCostSearchNode = PQItem, !.
 get_min_from_pq([PQ1,PQ2], MinCostSearchNode) :- search_node(_,C1,_) = PQ1, search_node(_,C2,_) = PQ2, ((C1 < C2, MinCostSearchNode = PQ1); MinCostSearchNode = PQ2), !.
-get_min_from_pq([PQ1|[PQ2|PQ]], MinCostSearchNode) :- search_node(_,C1,_) = PQ1, search_node(_,C2,_) = PQ2, ((C1 < C2, append(PQ, [PQ1], Q)); append(PQ, [PQ2], Q)), get_min_from_pq(Q, MinCostSearchNode).
+get_min_from_pq([PQ1|[PQ2|PQ]], MinCostSearchNode) :- search_node(_,C1,_) = PQ1, search_node(_,C2,_) = PQ2, ((C1 < C2, append(PQ, [PQ1], Q)); append(PQ, [PQ1], Q)), get_min_from_pq(Q, MinCostSearchNode), !.
 
 %Update pq rule:
 % update_pq(+SearchNodesList, +PQ, -NewPQ).
@@ -374,10 +384,10 @@ get_min_from_pq([PQ1|[PQ2|PQ]], MinCostSearchNode) :- search_node(_,C1,_) = PQ1,
 % X = [search_node(s1, 0, [s1]), search_node(s3, 1, [s3])].
 % Only search_node(s3, _, _) is updated to the new cost and path since the orignal cost 4 is larger than 0.
 
-update_pq([], NewPQ, NewPQ) :- !.
-update_pq([_], [], []).
-update_pq([SearchNode], [PQ1|PQ], NewPQ) :- (search_node(Station,C1,_) = SearchNode, search_node(Station,C2,_) = PQ1, (C1 < C2, append([SearchNode], PQ, NewPQ)), !); update_pq([SearchNode], PQ, Next), append([PQ1], Next, NewPQ), !.
-update_pq([SearchNode|SearchNodeRest], PQ, NewPQ) :- update_pq([SearchNode], PQ, Next), update_pq(SearchNodeRest, Next, NewPQ), !.
+%update_pq(SearchNodesList, PQ, NewPQ) :- false. /* <-- YOUR CODE HERE (delete the false) */
+update_pq([SearchNode], [PQ1], NewPQ) :- search_node(_,C1,_) = SearchNode, search_node(_,C2,_) = PQ1, ((C1 < C2, NewPQ = [SearchNode]); NewPQ = [PQ1]), !.
+update_pq([SearchNode|SearchNodeRest], [PQ1|PQ], NewPQ) :- update_pq(SearchNodeRest, PQ, PQNext), search_node(_,C1,_) = SearchNode, search_node(_,C2,_) = PQ1, ((C1 < C2, append([SearchNode], PQNext, NewPQ)); append([PQ1], PQNext, NewPQ)), !.
+%update_pq([SearchNode|SearchNodeRest], [PQ1|PQ], NewPQ) :- update_pq(SearchNodeRest, PQ, NewPQ).
 
 
 
@@ -501,3 +511,24 @@ dijkstra(Day, Goal, Visited, PQ, Path, Cost) :-
 navigate(Day, Start, Goal, Method, Path, Cost) :- 
     node(Start), node(Goal), day(Day), % Invalid methods will fail at compile time.
     call(Method, Day, Start, Goal, Path, Cost).
+    
+
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
